@@ -1,0 +1,71 @@
+version: '3.8'
+services:
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    env_file:
+      - .env
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: app_development
+    ports:
+      - "3306:3306"
+
+  app:
+    build: .
+    command: bundle exec unicorn -p 3000 -c ./config/unicorn.rb
+    env_file:
+      - .env
+    volumes:
+      - .:/usr/src/app
+      - bundle_data:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
+
+  zookeeper:
+    image: debezium/zookeeper:1.6
+    ports:
+      - "2181:2181"
+      - "2888:2888"
+      - "3888:3888"
+
+  kafka:
+    image: debezium/kafka:1.6
+    ports:
+      - "9092:9092"
+    links:
+      - zookeeper
+    environment:
+      - ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    depends_on:
+      - zookeeper
+
+  connect:
+    image: debezium/connect:1.6
+    ports:
+      - "8083:8083"
+    links:
+      - kafka
+      - db
+    depends_on:
+      - kafka
+      - db
+      - zookeeper
+    environment:
+      - BOOTSTRAP_SERVERS=kafka:9092
+      - GROUP_ID=1
+      - CONFIG_STORAGE_TOPIC=my_connect_configs
+      - OFFSET_STORAGE_TOPIC=my_connect_offsets
+      - STATUS_STORAGE_TOPIC=my_connect_statuses
+
+volumes:
+  mysql-data:
+  bundle_data: 

@@ -23,11 +23,11 @@
 ```mermaid
 graph TD
   subgraph Source_DB
-    MySQL\[\(MySQL 8\.0\)\]
+    MySQL["(MySQL 8.0)"]
   end
-  MySQL --> Debezium\[Debezium Connector\]
-  Debezium --> Kafka\[\(Kafka\)\]
-  Kafka --> Karafka\[Karafka Consumer\]
+  MySQL --> Debezium["Debezium Connector"]
+  Debezium --> Kafka["Kafka"]
+  Kafka --> Karafka["Karafka Consumer"]
 ```
 
 ### 1.2. セットアップ方針
